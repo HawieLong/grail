@@ -53,8 +53,8 @@ class Trainer():
         for b_idx, batch in enumerate(dataloader):
             data_pos, targets_pos, data_neg, targets_neg = self.params.move_batch_to_device(batch, self.params.device)
             self.optimizer.zero_grad()
-            score_pos = self.graph_classifier(data_pos)
-            score_neg = self.graph_classifier(data_neg)
+            score_pos, head_embs, tail_embs = self.graph_classifier(data_pos)
+            score_neg, head_embs, tail_embs = self.graph_classifier(data_neg)
             loss = self.criterion(score_pos, score_neg.view(len(score_pos), -1).mean(dim=1), torch.Tensor([1]).to(device=self.params.device))
             # print(score_pos, score_neg, loss)
             loss.backward()

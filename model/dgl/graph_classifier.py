@@ -31,9 +31,11 @@ class GraphClassifier(nn.Module):
 
         head_ids = (g.ndata['id'] == 1).nonzero().squeeze(1)
         head_embs = g.ndata['repr'][head_ids]
+        #print(head_embs)
 
         tail_ids = (g.ndata['id'] == 2).nonzero().squeeze(1)
         tail_embs = g.ndata['repr'][tail_ids]
+        #print(tail_embs)
 
         if self.params.add_ht_emb:
             g_rep = torch.cat([g_out.view(-1, self.params.num_gcn_layers * self.params.emb_dim),
@@ -43,5 +45,5 @@ class GraphClassifier(nn.Module):
         else:
             g_rep = torch.cat([g_out.view(-1, self.params.num_gcn_layers * self.params.emb_dim), self.rel_emb(rel_labels)], dim=1)
 
-        output = self.fc_layer(g_rep)
-        return output
+        return self.fc_layer(g_rep), head_embs, tail_embs
+        #return output
