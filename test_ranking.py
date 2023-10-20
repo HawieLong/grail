@@ -375,10 +375,15 @@ def get_rank(neg_links):
 
     if head_target_id != 10000:
         data = get_subgraphs(head_neg_links, adj_list_, dgl_adj_list_, model_.gnn.max_label_value, id2entity_, node_features_, kge_entity2id_)
-        graph_classifier, head_emb, tail_emb = model_(data)
+        graph_classifier, head_emb, tail_emb, head_ids, tail_ids = model_(data)
+        #print(id2entity_)
+        print("head_ids" + head_ids)
         print(head_emb)
+        print("tail_id" + tail_ids)
         print(tail_emb)
-        #cos_sim = head_emb.dot(tail_emb) / (np.linalg.norm(head_emb) * np.linalg.norm(tail_emb))
+        #save_ebd_file(id2entity_, head_emb, tail_emb, head_ids, tail_ids)
+        save_ebd_file(head_emb, tail_emb, head_ids, tail_ids)
+        #cos_sim = head_emb.dot(emb_generate) / (np.linalg.norm(emb_official) * np.linalg.norm(emb_generate))
         head_scores = graph_classifier.squeeze(1).detach().numpy()
         head_rank = np.argwhere(np.argsort(head_scores)[::-1] == head_target_id) + 1
     else:
@@ -390,9 +395,12 @@ def get_rank(neg_links):
 
     if tail_target_id != 10000:
         data = get_subgraphs(tail_neg_links, adj_list_, dgl_adj_list_, model_.gnn.max_label_value, id2entity_, node_features_, kge_entity2id_)
-        graph_classifier, head_emb, tail_emb = model_(data)
+        graph_classifier, head_emb, tail_emb, head_ids, tail_ids = model_(data)
+        print("head_ids" + head_ids)
         print(head_emb)
+        print("tail_id" + tail_ids)
         print(tail_emb)
+        save_ebd_file(head_emb, tail_emb, head_ids, tail_ids)
         tail_scores = graph_classifier.squeeze(1).detach().numpy()
         tail_rank = np.argwhere(np.argsort(tail_scores)[::-1] == tail_target_id) + 1
     else:
@@ -400,6 +408,17 @@ def get_rank(neg_links):
         tail_rank = 10000
 
     return head_scores, head_rank, tail_scores, tail_rank
+
+
+def save_ebd_file(head_emb, tail_emb, head_ids, tail_ids):
+
+    with open(os.path.join('./data', params.dataset, 'head_embedding.txt'), "a") as f:
+        for i in range (0, len(head_ids)):
+            f.write('\t'.join([head_ids[i], head_emb[i]]) + '\n')
+
+    with open(os.path.join('./data', params.dataset, 'tail_embedding.txt'), "a") as f:
+        for i in range (0, len(tail_ids)):
+            f.write('\t'.join([tail_ids[i], tail_emb[i]]) + '\n')
 
 
 def save_to_file(neg_triplets, id2entity, id2relation):

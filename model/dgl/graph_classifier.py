@@ -45,5 +45,5 @@ class GraphClassifier(nn.Module):
         else:
             g_rep = torch.cat([g_out.view(-1, self.params.num_gcn_layers * self.params.emb_dim), self.rel_emb(rel_labels)], dim=1)
 
-        return self.fc_layer(g_rep), head_embs, tail_embs
+        return self.fc_layer(g_rep), head_embs, tail_embs, head_ids, tail_ids
         #return output

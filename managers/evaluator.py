@@ -27,8 +27,8 @@ class Evaluator():
                 data_pos, targets_pos, data_neg, targets_neg = self.params.move_batch_to_device(batch, self.params.device)
                 # print([self.data.id2relation[r.item()] for r in data_pos[1]])
                 # pdb.set_trace()
-                score_pos, head_embs, tail_embs = self.graph_classifier(data_pos)
-                score_neg, head_embs, tail_embs = self.graph_classifier(data_neg)
+                score_pos, head_embs, tail_embs, head_ids, tail_ids = self.graph_classifier(data_pos)
+                score_neg, head_embs, tail_embs, head_ids, tail_ids = self.graph_classifier(data_neg)
 
                 # preds += torch.argmax(logits.detach().cpu(), dim=1).tolist()
                 pos_scores += score_pos.squeeze(1).detach().cpu().tolist()
