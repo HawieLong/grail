@@ -12,6 +12,7 @@ import networkx as nx
 import torch
 import numpy as np
 import dgl
+import pandas as pd
 
 def process_files(files, saved_relation2id, add_traspose_rels):
     '''
@@ -29,10 +30,13 @@ def process_files(files, saved_relation2id, add_traspose_rels):
     for file_type, file_path in files.items():
 
         data = []
-        with open(file_path) as f:
-            file_data = [line.split() for line in f.read().split('\n')[:-1]]
+        df = pd.read_excel(file_path)
+        for index, row in df.iterrows():
+            triplet = [str(row['head']), str(row['relation']), str(row['tail'])]
+        #with open(file_path) as f:
+        #    file_data = [line.split() for line in f.read().split('\n')[:-1]]
 
-        for triplet in file_data:
+        #for triplet in file_data:
             if triplet[0] not in entity2id:
                 entity2id[triplet[0]] = ent
                 ent += 1
@@ -287,12 +291,12 @@ def main(params):
     model = torch.load(params.model_path, map_location='cpu')
     adj_list, dgl_adj_list, triplets, entity2id, relation2id, id2entity, id2relation = process_files(params.file_paths, model.relation2id, params.add_traspose_rels)
     neg_triplets = get_neg_samples_replacing_head_tail(triplets['links'], adj_list)
-    head_neg_links = neg_triplets['head'][0]
+    head_neg_links = neg_triplets[0]['head'][0]
     data = get_subgraphs(head_neg_links, adj_list, dgl_adj_list, model.gnn.max_label_value, id2entity)
     _, head_emb, tail_emb, head_ids, tail_ids = model(data)
-    print("head_ids" + head_ids)
+    print("head_ids", head_ids)
     print(head_emb)
-    print("tail_id" + tail_ids)
+    print("tail_id", tail_ids)
     print(tail_emb)
     save_ebd_file(head_emb, tail_emb, head_ids, tail_ids)
     id, max_cos = cal_similarity(tail_emb)
@@ -304,25 +308,30 @@ def save_ebd_file(head_emb, tail_emb, head_ids, tail_ids):
 
     with open(os.path.join('./data', params.dataset, 'new_head_embedding.txt'), "a") as f:
         for i in range (0, len(head_ids)):
-            f.write('\t'.join([head_ids[i], head_emb[i]]) + '\n')
+            f.write('\t'.join([str(head_ids[i]), str(head_emb[i])]) + '\n')
 
     with open(os.path.join('./data', params.dataset, 'new_tail_embedding.txt'), "a") as f:
         for i in range (0, len(tail_ids)):
-            f.write('\t'.join([tail_ids[i], tail_emb[i]]) + '\n')
+            f.write('\t'.join([str(tail_ids[i]), str(tail_emb[i])]) + '\n')
 
 def cal_similarity(tail_emb):
     max_sim = 0
     max_id = -1
-    with open(os.path.join('./data', params.dataset, 'tail_embedding.txt'), "a") as f:
-        file_data = [line.split() for line in f.read().split('\n')[:-1]]
+    with open(os.path.join('./data', params.dataset, 'tail_embedding.txt'), "r") as f:
+        file_data = [line.split('grad_fn') for line in f.read().split('\t')[:-1]]
 
-    for embs in file_data:
-        cos_sim = head_emb.dot(tail_emb) / (np.linalg.norm(embs[1]) * np.linalg.norm(tail_emb))
+    print("===========================")
+    for embs in file_data[1:]:
+        print(embs[0].replace("\n","")[7:])
+        emb = torch.Tensor(eval(embs[0].replace("\n","")[7:-1]))
+
+        cos_sim = emb.reshape(-1).dot(tail_emb.reshape(-1)) / (np.linalg.norm(emb.reshape(-1)) * np.linalg.norm(tail_emb.reshape(-1)))
         if cos_sim > max_sim:
             max_sim = cos_sim
             max_id = embs[0]
     
     return max_id, max_sim
+    #return 0, 0
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
